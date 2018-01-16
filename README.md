@@ -97,6 +97,11 @@ Inspect docker images or containers:
 docker inspect <docker_id>
 ```
 
+Enter interactive mode of a running container and run shell command (useful when checking container's file system):
+```
+docker exec -it <docker_id> sh
+```
+
 View real time docker container memory and cpu usage:
 ```
 docker stats <docker_container_name>
