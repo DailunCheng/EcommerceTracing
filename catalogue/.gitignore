@@ -1,4 +1,3 @@
-docker/catalogue/
 __pycache__/
 vendor/**
 !vendor/manifest

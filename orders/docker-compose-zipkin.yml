@@ -14,7 +14,7 @@ services:
       - /tmp:rw,noexec,nosuid
     environment:
       - reschedule=on-node-failure
-      - ZIPKIN=zipkin
+      - ZIPKIN=http://zipkin:9411/api/v1/spans
     ports:
       - "8082:80"
   orders-db:
