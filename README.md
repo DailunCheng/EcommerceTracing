@@ -45,7 +45,7 @@ payment: docker-compose build
 
 load-test: docker build -t load-test .
 
-front-end: make test-image
+front-end (a little bit different): docker build -t cdl1995/front-end .
 
 wishlists: GROUP=weaveworksdemos COMMIT=test ./scripts/build.sh
 
