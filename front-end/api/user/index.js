@@ -6,7 +6,7 @@
  
     const CLSContext = require('zipkin-context-cls');
     const {Tracer} = require('zipkin');
-    const {recorder} = require('./recorder');
+    const {recorder} = require('../../traceRecorder');
     const rest = require('rest');
     const {restInterceptor} = require('zipkin-instrumentation-cujojs-rest');
     const defaultRequest = require('rest/interceptor/defaultRequest');
