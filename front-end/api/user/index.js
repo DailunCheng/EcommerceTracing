@@ -10,8 +10,8 @@
     const rest = require('rest');
     const {restInterceptor} = require('zipkin-instrumentation-cujojs-rest');
     const defaultRequest = require('rest/interceptor/defaultRequest');
-    const {expressMiddleware, wrapExpressHttpProxy} = require('zipkin-instrumentation-express')
-    const proxy = require('express-http-proxy');
+    //const {expressMiddleware, wrapExpressHttpProxy} = require('zipkin-instrumentation-express')
+    //const proxy = require('express-http-proxy');
 
     const ctxImpl = new CLSContext();
     const tracer = new Tracer({ctxImpl, recorder});
@@ -68,15 +68,34 @@ app.use((req, res, next) => {
     });
 
     app.post("/addresses", function(req, res, next) {
-        req.body.userID = helpers.getCustomerId(req, app.get("env"));
+        var addressHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
+        var zipkinRestWithAddress =  addressHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_addresses_post'});
 
+        req.body.userID = helpers.getCustomerId(req, app.get("env"));
+        /*
         var options = {
             uri: endpoints.addressUrl,
             method: 'POST',
             json: true,
             body: req.body
-        };
+        };*/
         console.log("Posting Address: " + JSON.stringify(req.body));
+
+        var urlAddress = endpoints.addressUrl;
+        zipkinRestWithAddress({method:'POST',path:urlAddress,entity:JSON.stringify(req.body)}) 
+        .then(
+            function(response){
+                var body = "";
+                if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
+                if (typeof body.error !== "undefined" ) {
+                    return next(body.error);
+                }
+                helpers.respondSuccessBody(res, JSON.stringify(body));
+            }.bind({
+                res: res
+            }))
+        .catch(err => console.error('Error', err.stack))
+        /*
         request(options, function(error, response, body) {
             if (error) {
                 return next(error);
@@ -84,15 +103,38 @@ app.use((req, res, next) => {
             helpers.respondSuccessBody(res, JSON.stringify(body));
         }.bind({
             res: res
-        }));
+        }));*/
     });
 
     app.get("/card", function(req, res, next) {
+        var zipkinRest =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_card_get'});
         var custId = helpers.getCustomerId(req, app.get("env"));
+        /*
         var options = {
             uri: endpoints.customersUrl + '/' + custId + '/cards',
             method: 'GET',
-        };
+        };*/
+        var urlCard=endpoints.customersUrl + '/' + custId + '/cards';
+        zipkinRest({method:'GET',path:urlCard})
+        .then(
+            function(response){
+                var body = "";
+                if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
+                if (typeof body.error !== "undefined" ) {
+                    return next(body.error);
+                }
+                if (body.status_code !== 500 && body._embedded.card.length !== 0 ) {
+                    var resp = {
+                        "number": body._embedded.card[0].longNum.slice(-4)
+                    };
+                    return helpers.respondSuccessBody(res, JSON.stringify(resp));
+                }
+                return helpers.respondSuccessBody(res, JSON.stringify({"status_code": 500}));
+            }.bind({
+                res: res
+            })) 
+        .catch(err => console.error('Error', err.stack))
+        /*
         request(options, function(error, response, body) {
             if (error) {
                 return next(error);
@@ -107,15 +149,36 @@ app.use((req, res, next) => {
             return helpers.respondSuccessBody(res, JSON.stringify({"status_code": 500}));
         }.bind({
             res: res
-        }));
+        }));*/
     });
 
     app.get("/address", function(req, res, next) {
+        var zipkinRest =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_address_get'});
         var custId = helpers.getCustomerId(req, app.get("env"));
+        /*
         var options = {
             uri: endpoints.customersUrl + '/' + custId + '/addresses',
             method: 'GET',
-        };
+        };*/
+        var urlAddress = endpoints.customersUrl + '/' + custId + '/addresses';
+        zipkinRest({method:'GET',path:urlAddress})
+        .then(
+            function(response){
+                var body = "";
+                if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
+                if (typeof body.error !== "undefined" ) {
+                    return next(body.error);
+                }
+                if (body.status_code !== 500 && body._embedded.address.length !== 0 ) {
+                    var resp = body._embedded.address[0];
+                    return helpers.respondSuccessBody(res, JSON.stringify(resp));
+                }
+                return helpers.respondSuccessBody(res, JSON.stringify({"status_code": 500}));
+            }.bind({
+                res: res
+            }))
+        .catch(err => console.error('Error', err.stack))
+        /*
         request(options, function(error, response, body) {
             if (error) {
                 return next(error);
@@ -128,19 +191,37 @@ app.use((req, res, next) => {
             return helpers.respondSuccessBody(res, JSON.stringify({"status_code": 500}));
         }.bind({
             res: res
-        }));
+        }));*/
     });
 
     app.post("/cards", function(req, res, next) {
         req.body.userID = helpers.getCustomerId(req, app.get("env"));
-
+        var cardsHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
+        var zipkinRestWithCards =  cardsHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_cards_post'});
+        /*
         var options = {
             uri: endpoints.cardsUrl,
             method: 'POST',
             json: true,
             body: req.body
-        };
+        };*/
         console.log("Posting Card: " + JSON.stringify(req.body));
+         
+        var urlCards = endpoints.cardsUrl;
+        zipkinRestWithCards({method:'POST',path:urlCards,entity:JSON.stringify(req.body)})
+        .then(
+            function(response){
+                var body = "";
+                if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
+                if (typeof body.error !== "undefined" ) {
+                    return next(body.error);
+                }
+                helpers.respondSuccessBody(res, JSON.stringify(body));
+            }.bind({
+                res: res
+            }))
+        .catch(err => console.error('Error', err.stack))
+        /*
         request(options, function(error, response, body) {
             if (error) {
                 return next(error);
@@ -148,7 +229,7 @@ app.use((req, res, next) => {
             helpers.respondSuccessBody(res, JSON.stringify(body));
         }.bind({
             res: res
-        }));
+        }));*/
     });
 
     // Delete Customer - TO BE USED FOR TESTING ONLY (for now)
@@ -204,10 +285,9 @@ app.use((req, res, next) => {
 
     app.post("/register", function(req, res, next) {
         
-        var registerHeader = rest.wrap(defaultRequest, { headers: {method: 'POST', 'json':'true'} });
+        var registerHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
         var zipkinRestWithRegister =  registerHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_register'});
-        var getHeader = rest.wrap(defaultRequest, { headers: {method: 'GET'} });
-        var zipkinRestWithGet =  getHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_register'});
+        var zipkinRestWithGet =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_register'});
 
         /*
         var options = {
@@ -221,9 +301,12 @@ app.use((req, res, next) => {
         console.log(req.body);
         async.waterfall([
                 function(callback) {
-                    zipkinRestWithRegister({method:'POST',path:endpoints.registerUrl,entity:JSON.stringify(req.body)}) .then(
+                    var urlPOST = endpoints.registerUrl;
+                    zipkinRestWithRegister({method:'POST',path:urlPOST,entity:JSON.stringify(req.body)}) 
+                    .then(
                         function(response){
-                            var body = response.entity;
+                            var body = "";
+                            if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
                             if (typeof body.error !== "undefined" ) {
                                 console.log(body.error);
                                 callback(body.error);
@@ -244,7 +327,8 @@ app.use((req, res, next) => {
                             console.log(response.status.code);
                             console.log(response.entity);
                             callback(true);
-                         }).catch(err => console.error('Error', err.stack))
+                         })
+                    .catch(err => console.error('Error', err.stack))
                     /*
                     request(options, function(error, response, body) {
                         if (error !== null ) {
@@ -271,22 +355,24 @@ app.use((req, res, next) => {
                     var sessionId = req.session.id;
                     console.log("Merging carts for customer id: " + custId + " and session id: " + sessionId);
                     /*
-                    var options = {
+                    var  options = {
                         uri: endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId,
                         method: 'GET'
                     };*/
-                    var url = endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId;
-                    zipkinRestWithGet(url)
+                    var urlGet = endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId;
+                    zipkinRestWithGet({method:'GET',path:urlGet})
                     .then(
                         function(response){
-                            var body = response.entity;
-                            if (body.error) {
+                            var body = "";
+                            if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
+                            if (typeof body.error !== "undefined") {
                                 if(callback) callback(body.error);
                                 return;
                             }
                             console.log('Carts merged.');
                             if(callback) callback(null, custId);
-                     }).catch(err => console.error('Error', err.stack))
+                         })
+                     .catch(err => console.error('Error', err.stack))
                     /*
                     request(options, function(error, response, body) {
                         if (error) {
@@ -323,23 +409,24 @@ app.use((req, res, next) => {
         console.log("Received login request");
 
         var loginHeader = rest.wrap(defaultRequest, { headers: { 'Authorization': req.get('Authorization') } });
-        var zipkinRestWithLogin =  loginHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});
-        var getHeader = rest.wrap(defaultRequest, { headers: {method: 'GET'} });
-        var zipkinRestWithGet =  getHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});
+        var zipkinRestWithAuth =  loginHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});
+        var zipkinRestWithGet =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});
 
         async.waterfall([
                 function(callback) {
-			zipkinRestWithLogin(endpoints.loginUrl)
+                        var urlAuth=endpoints.loginUrl;
+			zipkinRestWithAuth({method:'GET',path:urlAuth})
 			.then(
 				function(response) {
-					var body = response.entity;
-					if(body.error){
+                                        var body = "";
+                                        if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
+					if(typeof body.error !== "undefined"){
                             			callback(body.error);
                             			return;
 					}
                         		if (response.status.code == 200 && body != null && body != "") {
                             			console.log(body);
-                            			var customerId = JSON.parse(body).user.id;
+                            			var customerId = body.user.id;
                             			console.log(customerId);
                             			req.session.customerId = customerId;
                             			callback(null, customerId);
@@ -347,7 +434,8 @@ app.use((req, res, next) => {
                         		}
                         		console.log(response.status.code);
                         		callback(true);
-                     		}).catch(err => console.error('Error', err.stack))
+                     		})
+                        .catch(err => console.error('Error', err.stack))
                    /*
                     var options = {
                         headers: {
@@ -375,12 +463,13 @@ app.use((req, res, next) => {
                 function(custId, callback) {
                     var sessionId = req.session.id;
                     console.log("Merging carts for customer id: " + custId + " and session id: " + sessionId);
-			var url=endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId;
-			zipkinRestWithGet(url)
+			var urlMerge = endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId;
+			zipkinRestWithGet({method:'GET',path:urlMerge})
                         .then(
                                 function(response) {
-                                        var body = response.entity;
-                                        if(body.error){
+                                        var body = "";
+                                        if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
+                                        if(typeof body.error !== "undefined"){
                                                 // if cart fails just log it, it prevenst login
                             			console.log(body.error);
                             			//return;
@@ -388,7 +477,8 @@ app.use((req, res, next) => {
                                         console.log('Carts merged.');
                                         callback(null, custId);
 
-                                }).catch(err => console.error('Error', err.stack))
+                                })
+                        .catch(err => console.error('Error', err.stack))
 				
 
 		    /*

@@ -86,7 +86,7 @@
   helpers.simpleHttpRequest = function(url, res, next) {
     const ctxImpl = new CLSContext();
     const tracer = new Tracer({ctxImpl, recorder});
-    const zipkinRest = rest.wrap(restInterceptor, {tracer,serviceName: 'frontend_simple_get'});
+    const zipkinRest = rest.wrap(restInterceptor, {tracer,serviceName: 'frontend_helpers_get'});
     zipkinRest({path:url,method:'GET'})
     .then(
         function(response) {
