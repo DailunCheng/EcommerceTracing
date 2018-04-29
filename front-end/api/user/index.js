@@ -203,17 +203,49 @@ app.use((req, res, next) => {
     });
 
     app.post("/register", function(req, res, next) {
+        
+        var registerHeader = rest.wrap(defaultRequest, { headers: {method: 'POST', 'json':'true'} });
+        var zipkinRestWithRegister =  registerHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_register'});
+        var getHeader = rest.wrap(defaultRequest, { headers: {method: 'GET'} });
+        var zipkinRestWithGet =  getHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_register'});
+
+        /*
         var options = {
             uri: endpoints.registerUrl,
             method: 'POST',
             json: true,
             body: req.body
-        };
+        };*/
 
         console.log("Posting Customer: " + JSON.stringify(req.body));
-
+        console.log(req.body);
         async.waterfall([
                 function(callback) {
+                    zipkinRestWithRegister({method:'POST',path:endpoints.registerUrl,entity:JSON.stringify(req.body)}) .then(
+                        function(response){
+                            var body = response.entity;
+                            if (typeof body.error !== "undefined" ) {
+                                console.log(body.error);
+                                callback(body.error);
+                                return;
+                            }
+                            if (response.status.code == 200 && body != null && body != "") {
+                                if (body.error) {
+                                    callback(body.error);
+                                    return;
+                                }
+                                console.log(body);
+                                var customerId = body.id;
+                                console.log(customerId);
+                                req.session.customerId = customerId;
+                                callback(null, customerId);
+                                return;
+                            }
+                            console.log(response.status.code);
+                            console.log(response.entity);
+                            callback(true);
+                         }).catch(err => console.error('Error', err.stack))
+                    /*
                     request(options, function(error, response, body) {
                         if (error !== null ) {
                             callback(error);
@@ -233,16 +265,29 @@ app.use((req, res, next) => {
                         }
                         console.log(response.statusCode);
                         callback(true);
-                    });
+                    });*/
                 },
                 function(custId, callback) {
                     var sessionId = req.session.id;
                     console.log("Merging carts for customer id: " + custId + " and session id: " + sessionId);
-
+                    /*
                     var options = {
                         uri: endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId,
                         method: 'GET'
-                    };
+                    };*/
+                    var url = endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId;
+                    zipkinRestWithGet(url)
+                    .then(
+                        function(response){
+                            var body = response.entity;
+                            if (body.error) {
+                                if(callback) callback(body.error);
+                                return;
+                            }
+                            console.log('Carts merged.');
+                            if(callback) callback(null, custId);
+                     }).catch(err => console.error('Error', err.stack))
+                    /*
                     request(options, function(error, response, body) {
                         if (error) {
                             if(callback) callback(error);
@@ -250,7 +295,7 @@ app.use((req, res, next) => {
                         }
                         console.log('Carts merged.');
                         if(callback) callback(null, custId);
-                    });
+                    });*/
                 }
             ],
             function(err, custId) {
@@ -280,7 +325,7 @@ app.use((req, res, next) => {
         var loginHeader = rest.wrap(defaultRequest, { headers: { 'Authorization': req.get('Authorization') } });
         var zipkinRestWithLogin =  loginHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});
         var getHeader = rest.wrap(defaultRequest, { headers: {method: 'GET'} });
-        var zipkinRestWithGet =  getHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});;
+        var zipkinRestWithGet =  getHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});
 
         async.waterfall([
                 function(callback) {
@@ -289,7 +334,7 @@ app.use((req, res, next) => {
 				function(response) {
 					var body = response.entity;
 					if(body.error){
-                            			callback(error);
+                            			callback(body.error);
                             			return;
 					}
                         		if (response.status.code == 200 && body != null && body != "") {
@@ -337,7 +382,7 @@ app.use((req, res, next) => {
                                         var body = response.entity;
                                         if(body.error){
                                                 // if cart fails just log it, it prevenst login
-                            			console.log(error);
+                            			console.log(body.error);
                             			//return;
                                         }
                                         console.log('Carts merged.');
