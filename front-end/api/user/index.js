@@ -68,8 +68,9 @@ app.use((req, res, next) => {
     });
 
     app.post("/addresses", function(req, res, next) {
+        tracer.local('local_frontend_user_addresses_post',()=>{
         var addressHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
-        var zipkinRestWithAddress =  addressHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_addresses_post'});
+        var zipkinRestWithAddress =  addressHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_addresses_post'});
 
         req.body.userID = helpers.getCustomerId(req, app.get("env"));
         /*
@@ -94,7 +95,7 @@ app.use((req, res, next) => {
             }.bind({
                 res: res
             }))
-        .catch(err => console.error('Error', err.stack))
+        .catch(err => console.error('Error', err.stack))});
         /*
         request(options, function(error, response, body) {
             if (error) {
@@ -107,7 +108,8 @@ app.use((req, res, next) => {
     });
 
     app.get("/card", function(req, res, next) {
-        var zipkinRest =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_card_get'});
+        tracer.local('local_frontend_user_card_get',()=>{
+        var zipkinRest =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_card_get'});
         var custId = helpers.getCustomerId(req, app.get("env"));
         /*
         var options = {
@@ -133,7 +135,7 @@ app.use((req, res, next) => {
             }.bind({
                 res: res
             })) 
-        .catch(err => console.error('Error', err.stack))
+        .catch(err => console.error('Error', err.stack)) });
         /*
         request(options, function(error, response, body) {
             if (error) {
@@ -153,7 +155,8 @@ app.use((req, res, next) => {
     });
 
     app.get("/address", function(req, res, next) {
-        var zipkinRest =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_address_get'});
+        tracer.local('local_frontend_user_address',()=>{
+        var zipkinRest =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_address_get'});
         var custId = helpers.getCustomerId(req, app.get("env"));
         /*
         var options = {
@@ -177,7 +180,7 @@ app.use((req, res, next) => {
             }.bind({
                 res: res
             }))
-        .catch(err => console.error('Error', err.stack))
+        .catch(err => console.error('Error', err.stack))});
         /*
         request(options, function(error, response, body) {
             if (error) {
@@ -195,9 +198,10 @@ app.use((req, res, next) => {
     });
 
     app.post("/cards", function(req, res, next) {
+        tracer.local('local_frontend_user_cards_post',()=>{
         req.body.userID = helpers.getCustomerId(req, app.get("env"));
         var cardsHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
-        var zipkinRestWithCards =  cardsHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_cards_post'});
+        var zipkinRestWithCards =  cardsHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_cards_post'});
         /*
         var options = {
             uri: endpoints.cardsUrl,
@@ -220,7 +224,7 @@ app.use((req, res, next) => {
             }.bind({
                 res: res
             }))
-        .catch(err => console.error('Error', err.stack))
+        .catch(err => console.error('Error', err.stack)) });
         /*
         request(options, function(error, response, body) {
             if (error) {
@@ -284,10 +288,11 @@ app.use((req, res, next) => {
     });
 
     app.post("/register", function(req, res, next) {
-        
+        tracer.local('local_frontend_user_register',()=>{
+
         var registerHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
-        var zipkinRestWithRegister =  registerHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_register'});
-        var zipkinRestWithGet =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_register'});
+        var zipkinRestWithRegister =  registerHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_register'});
+        var zipkinRestWithGet =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_register'});
 
         /*
         var options = {
@@ -400,17 +405,17 @@ app.use((req, res, next) => {
                 res.end();
                 return;
             }
-        );
+        );});
     });
 
 //app.use(expressMiddleware({tracer,serviceName:'frontend-user'}));
 
     app.get("/login", function(req, res, next) {
+        tracer.local('local_frontend_user_login',()=>{
         console.log("Received login request");
-
         var loginHeader = rest.wrap(defaultRequest, { headers: { 'Authorization': req.get('Authorization') } });
-        var zipkinRestWithAuth =  loginHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});
-        var zipkinRestWithGet =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_login'});
+        var zipkinRestWithAuth =  loginHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_login'});
+        var zipkinRestWithGet =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_login'});
 
         async.waterfall([
                 function(callback) {
@@ -511,7 +516,7 @@ app.use((req, res, next) => {
                 console.log("Sent cookies.");
                 res.end();
                 return;
-            }); 
+            }); });
     });
 
     module.exports = app;
