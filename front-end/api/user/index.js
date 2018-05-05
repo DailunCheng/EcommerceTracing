@@ -3,7 +3,7 @@
 
     var async = require("async"), express = require("express"), request = require("request"), endpoints = require("../endpoints"), helpers = require("../../helpers"), app = express(), cookie_name = "logged_in"
 
- 
+
     const CLSContext = require('zipkin-context-cls');
     const {Tracer} = require('zipkin');
     const {recorder} = require('../../traceRecorder');
@@ -15,18 +15,19 @@
 
     const ctxImpl = new CLSContext();
     const tracer = new Tracer({ctxImpl, recorder});
+    const zipkinMiddleware = require('zipkin-instrumentation-express').expressMiddleware;
+    app.use(zipkinMiddleware({tracer:tracer,serviceName:'frontend'}));
 
-/*
+
 // Allow cross-origin, traced requests. See http://enable-cors.org/server_expressjs.html
-app.use((req, res, next) => {
+/*app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', [
     'Origin', 'Accept', 'X-Requested-With', 'X-B3-TraceId',
     'X-B3-ParentSpanId', 'X-B3-SpanId', 'X-B3-Sampled'
   ].join(', '));
   next();
-});
-*/
+});*/
 
 
     app.get("/customers/:id", function(req, res, next) {
@@ -68,9 +69,7 @@ app.use((req, res, next) => {
     });
 
     app.post("/addresses", function(req, res, next) {
-        tracer.local('local_frontend_user_addresses_post',()=>{
-        var addressHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
-        var zipkinRestWithAddress =  addressHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_addresses_post'});
+        var zipkinRestWithAddress =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_addresses_post'});
 
         req.body.userID = helpers.getCustomerId(req, app.get("env"));
         /*
@@ -83,7 +82,7 @@ app.use((req, res, next) => {
         console.log("Posting Address: " + JSON.stringify(req.body));
 
         var urlAddress = endpoints.addressUrl;
-        zipkinRestWithAddress({method:'POST',path:urlAddress,entity:JSON.stringify(req.body)}) 
+        zipkinRestWithAddress({method:'POST',path:urlAddress,entity:JSON.stringify(req.body), headers: { 'Content-Type': 'application/json'}})
         .then(
             function(response){
                 var body = "";
@@ -95,7 +94,7 @@ app.use((req, res, next) => {
             }.bind({
                 res: res
             }))
-        .catch(err => console.error('Error', err.stack))});
+        .catch(err => console.error('Error', err.stack))
         /*
         request(options, function(error, response, body) {
             if (error) {
@@ -108,7 +107,6 @@ app.use((req, res, next) => {
     });
 
     app.get("/card", function(req, res, next) {
-        tracer.local('local_frontend_user_card_get',()=>{
         var zipkinRest =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_card_get'});
         var custId = helpers.getCustomerId(req, app.get("env"));
         /*
@@ -134,8 +132,8 @@ app.use((req, res, next) => {
                 return helpers.respondSuccessBody(res, JSON.stringify({"status_code": 500}));
             }.bind({
                 res: res
-            })) 
-        .catch(err => console.error('Error', err.stack)) });
+            }))
+        .catch(err => console.error('Error', err.stack))
         /*
         request(options, function(error, response, body) {
             if (error) {
@@ -155,7 +153,6 @@ app.use((req, res, next) => {
     });
 
     app.get("/address", function(req, res, next) {
-        tracer.local('local_frontend_user_address',()=>{
         var zipkinRest =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_address_get'});
         var custId = helpers.getCustomerId(req, app.get("env"));
         /*
@@ -180,7 +177,7 @@ app.use((req, res, next) => {
             }.bind({
                 res: res
             }))
-        .catch(err => console.error('Error', err.stack))});
+        .catch(err => console.error('Error', err.stack))
         /*
         request(options, function(error, response, body) {
             if (error) {
@@ -198,10 +195,8 @@ app.use((req, res, next) => {
     });
 
     app.post("/cards", function(req, res, next) {
-        tracer.local('local_frontend_user_cards_post',()=>{
         req.body.userID = helpers.getCustomerId(req, app.get("env"));
-        var cardsHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
-        var zipkinRestWithCards =  cardsHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_cards_post'});
+        var zipkinRestWithCards =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_cards_post'});
         /*
         var options = {
             uri: endpoints.cardsUrl,
@@ -210,9 +205,9 @@ app.use((req, res, next) => {
             body: req.body
         };*/
         console.log("Posting Card: " + JSON.stringify(req.body));
-         
+
         var urlCards = endpoints.cardsUrl;
-        zipkinRestWithCards({method:'POST',path:urlCards,entity:JSON.stringify(req.body)})
+        zipkinRestWithCards({method:'POST',path:urlCards,entity:JSON.stringify(req.body),headers: { 'Content-Type': 'application/json'}})
         .then(
             function(response){
                 var body = "";
@@ -224,7 +219,7 @@ app.use((req, res, next) => {
             }.bind({
                 res: res
             }))
-        .catch(err => console.error('Error', err.stack)) });
+        .catch(err => console.error('Error', err.stack))
         /*
         request(options, function(error, response, body) {
             if (error) {
@@ -288,10 +283,7 @@ app.use((req, res, next) => {
     });
 
     app.post("/register", function(req, res, next) {
-        tracer.local('local_frontend_user_register',()=>{
-
-        var registerHeader = rest.wrap(defaultRequest, { headers: {'json':'true'} });
-        var zipkinRestWithRegister =  registerHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_register'});
+        var zipkinRestWithRegister =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_register'});
         var zipkinRestWithGet =  rest.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_register'});
 
         /*
@@ -307,7 +299,7 @@ app.use((req, res, next) => {
         async.waterfall([
                 function(callback) {
                     var urlPOST = endpoints.registerUrl;
-                    zipkinRestWithRegister({method:'POST',path:urlPOST,entity:JSON.stringify(req.body)}) 
+                    zipkinRestWithRegister({method:'POST',path:urlPOST,entity:JSON.stringify(req.body),headers: { 'Content-Type': 'application/json'}})
                     .then(
                         function(response){
                             var body = "";
@@ -405,13 +397,12 @@ app.use((req, res, next) => {
                 res.end();
                 return;
             }
-        );});
+        );
     });
 
 //app.use(expressMiddleware({tracer,serviceName:'frontend-user'}));
 
     app.get("/login", function(req, res, next) {
-        tracer.local('local_frontend_user_login',()=>{
         console.log("Received login request");
         var loginHeader = rest.wrap(defaultRequest, { headers: { 'Authorization': req.get('Authorization') } });
         var zipkinRestWithAuth =  loginHeader.wrap(restInterceptor, {tracer, serviceName: 'frontend_user_login'});
@@ -448,7 +439,7 @@ app.use((req, res, next) => {
                         },
                         uri: endpoints.loginUrl
                     };
-                    request(options, function(error, response, body) { 
+                    request(options, function(error, response, body) {
                         if (error) {
                             callback(error);
                             return;
@@ -484,7 +475,7 @@ app.use((req, res, next) => {
 
                                 })
                         .catch(err => console.error('Error', err.stack))
-				
+
 
 		    /*
                     var options = {
@@ -516,7 +507,7 @@ app.use((req, res, next) => {
                 console.log("Sent cookies.");
                 res.end();
                 return;
-            }); });
+            });
     });
 
     module.exports = app;
