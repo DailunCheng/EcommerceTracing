@@ -83,9 +83,7 @@
     const defaultRequest = require('rest/interceptor/defaultRequest');
     const ctxImpl = new CLSContext();
     const tracer = new Tracer({ctxImpl, recorder});
-
   helpers.simpleHttpRequest = function(url, res, next) {
-    tracer.local('local_frontend_helpers_get',()=>{
     const zipkinRest = rest.wrap(restInterceptor, {tracer,serviceName: 'frontend_helpers_get'});
     zipkinRest({path:url,method:'GET'})
     .then(
@@ -97,7 +95,7 @@
                 }
              helpers.respondSuccessBody(res, JSON.stringify(body));
        }.bind({res: res}))
-    .catch(err => console.error('Error', err.stack))});
+    .catch(err => console.error('Error', err.stack));
     /*
     request.get(url, function(error, response, body) {
       if (error) return next(error);
