@@ -98,4 +98,4 @@ make e2e
 
 # Tracing documentation
 
-Please check tracingDocumentation.md
+Please check README.md in zipkinTracing folder
