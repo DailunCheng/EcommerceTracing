@@ -95,3 +95,7 @@ make e2e
 # Push
 
 `GROUP=weaveworksdemos COMMIT=test ./scripts/push.sh`
+
+# Tracing documentation
+
+Please check tracingDocumentation.md
