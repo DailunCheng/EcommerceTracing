@@ -119,6 +119,11 @@ sudo docker update --cpuset-cpus=<assigned_core> <docker_container_name>
 Example: sudo docker update --cpuset-cpus="3-3" dockercompose_payment_1
 ```
 
+Check logs of a specific container:
+```
+docker logs <container_name, NOT image_name>
+```
+
 ## Other useful commands:
 
 View cluster IP address:
@@ -136,5 +141,14 @@ Linux interactive process viewer:
 htop
 ```
 
+Show all containers' IP address:
+```
+docker ps -q | xargs -n 1 docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}} {{ .Name }}' | sed 's/ \// /'
+```
+
+Do tcpdump with timestamp and ASCII header on a specific container:
+```
+docker run -it --net=container:<container_name, NOT image_name> tcpdump tcpdump -A -tttt -nn > packet30.log
+```
 
 
