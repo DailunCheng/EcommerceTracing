@@ -76,17 +76,22 @@ P.P.S To get help from open source community, go ask in gitter!
 ```
 You can check the parameter for Tracer [here](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin)
 
-2. Since the front-end is using express, ideally everything should use [zipkin-instrumentation-express](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-express) but some functions got removed in Node.js release and break the application. Please check back this issue to see if it gets fixed. https://github.com/openzipkin/zipkin-js/issues/151
+2. To enable front-end tracing. I import lots of corresponding modules and before compiling the nodejs application for the first time, you need to install those corresponding node modules.
+```
+npm install zipkin zipkin-instrumentation-express zipkin-context-cls zipkin-transport-http rest zipkin-instrumentation-cujojs-rest express-http-proxy
+```
 
-3. The workaround is to use [zipkin-instrumentation-express](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-express) in the server side (front-end receive request from user) and [zipkin-instrumentation-cujojs-rest](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-cujojs-rest) for the client side (front-end send subsequent request to other back-end containers). All modification happens in /api and /helper
+3. Since the front-end is using express, ideally everything should use [zipkin-instrumentation-express](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-express) but some functions got removed in Node.js release and break the application. Please check back this issue to see if it gets fixed. https://github.com/openzipkin/zipkin-js/issues/151
 
-3. Currently server tracing is done using [zipkin-instrumentation-express](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-express). The example code is: 
+4. The workaround is to use [zipkin-instrumentation-express](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-express) in the server side (front-end receive request from user) and [zipkin-instrumentation-cujojs-rest](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-cujojs-rest) for the client side (front-end send subsequent request to other back-end containers). All modification happens in /api and /helper
+
+5. Currently server tracing is done using [zipkin-instrumentation-express](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-express). The example code is: 
 ```
 const zipkinMiddleware = require('zipkin-instrumentation-express').expressMiddleware;
 app.use(zipkinMiddleware({tracer:tracer,serviceName:'frontend'}));
 ```
 
-4. The client side tracing is done using [zipkin-instrumentation-cujojs-rest](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-cujojs-rest). 
+6. The client side tracing is done using [zipkin-instrumentation-cujojs-rest](https://github.com/openzipkin/zipkin-js/tree/master/packages/zipkin-instrumentation-cujojs-rest). 
 
 #### Cujojs
 
@@ -109,7 +114,9 @@ zipkinRestWithRegister({method:'POST',path:urlPOST,entity:JSON.stringify(req.bod
 .catch(...)
 ```
 
-(4) Be aware of when to use the actual object and when to use the stringify JSON string of the object
+(4) If the request failed and you want to check the detail error message in the front-end docker logs, go to the lib folder of zipkin-instrumentation-cujojs-rest in the node_module folder and do console.log for the response. Then compile and run the front-end again.
+
+(5) Be aware of when to use the actual object and when to use the stringify JSON string of the object
 
 ### RabbitMQ and Queue-master
 
@@ -117,7 +124,14 @@ zipkinRestWithRegister({method:'POST',path:urlPOST,entity:JSON.stringify(req.bod
 
 2. The second approach is to add [brave-instrumentation-spring-rabbit](https://github.com/DailunCheng/shipping) manually. But I have trouble importing method SpringRabbitTracing from the original spring rabbit repo.
 
-2. Two examples here about how to instrument the shipping/Queue-master to pass trace through rabbitmq. [Sleuth One](https://github.com/openzipkin/sleuth-webmvc-example/compare/add-rabbit-tracing) [The brave one](https://github.com/openzipkin/brave/tree/b3e52c15aef4b34f5e672b119adb22203242d604/instrumentation/spring-rabbit)
+2. Two examples here about how to instrument the shipping/Queue-master to pass trace through rabbitmq. [The sleuth One](https://github.com/openzipkin/sleuth-webmvc-example/compare/add-rabbit-tracing) [The brave one](https://github.com/openzipkin/brave/tree/b3e52c15aef4b34f5e672b119adb22203242d604/instrumentation/spring-rabbit)
 
+### "query_latency" latency extraction code and its test file 
 
+1. The "query_latency" python code can extract average container level latency or front-end subsequent functionality latency. The code use 'kind' and 'serviceName' field to located the target time duration. For the time duration terminology, please read [spring-cloud-sleuth](https://github.com/spring-cloud/spring-cloud-sleuth)
 
+2. The main function has examples about how to use the extraction code. To call queryLatency, you need to specify hostIP, name, lookback time amount and whether this name is a container or a front-end functionality.
+
+3. This extraction code has test in test.py. It will read the real example response from Zipkin API in JSON format in /sampleLogs and check if output is expected. If you have trouble understanding the structure/meaning of the Zipkin response, the /sampleLogs has screenshots of how Zipkin visualize the traces of the log files. You can compare the screenshot with the JSON response using the [online JSON visualizer](https://jsoneditoronline.org/) 
+
+4. To explore functionality of Zipkin API, please check [Zipkin API](https://zipkin.io/zipkin-api/)
