@@ -95,7 +95,7 @@ app.use(zipkinMiddleware({tracer:tracer,serviceName:'frontend'}));
 
 #### Cujojs
 
-Cujojs help you add/modify header, request/response by calling wrap. If multiple wrap is needed, simply stack them together.
+Cujojs help you add/modify header, request/response by calling wrap. If multiple wrap is needed, simply stack them together. To learn from examples, check [this](https://github.com/cujojs/rest/blob/master/docs/interceptors.md#module-rest/interceptor)
 
 (1) Wrap a general HTTP request with zipkin tracing info and the span name of the trace:
 Example: user register
