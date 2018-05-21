@@ -69,7 +69,8 @@ def get_latency_frontend_workaround(durationMilliSecond, containerName, hostIP):
     URL = "http://"+hostIP+":9411/api/v1/traces?serviceName=" + containerName + "&lookback=" + str(
         durationMilliSecond) + "&limit=1000"
     r = requests.get(URL)
-    # print(r.status_code)
+    if r.status_code != requests.codes.ok:
+        print(r.status_code)
     jsonResult = r.json()
     # print(json.dumps(jsonResult))
     allTraceLatency = list()
