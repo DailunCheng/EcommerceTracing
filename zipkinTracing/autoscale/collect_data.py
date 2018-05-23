@@ -19,6 +19,7 @@ SERVICE_NAME = "orders"
 HOST_IP = "128.253.128.66"
 TIME_LIMIT = 8 * 60 # 5 minutes
 MEMORY_SWAP_ERROR = "Memory limit should be smaller than already set memoryswap limit, update the memoryswap at the same time"
+SCALE_TIMES = []
 
 def scale_up():
     containers = Containers()
@@ -56,36 +57,35 @@ def run_scaling(sensitivity, use_utilization=True, use_latency=True):
     times = []
     latencies = []
 
-    #workers = Pool()
+    workers = Pool()
 
     start_ts = int(time.time())
     curr_ts = start_ts
 
     with Pool() as workers:
-        while curr_ts - start_ts < TIME_LIMIT:
-            curr_ts = int(time.time())
-            #latency = getLatency(LOOKBACK, SERVICE_NAME, HOST_IP)
-            latency = queryLatency(HOST_IP, SERVICE_NAME, LOOKBACK, True)
-            print(latency)
+        if use_latency:
+            while curr_ts - start_ts < TIME_LIMIT:
+                curr_ts = int(time.time())
+                latency = queryLatency(HOST_IP, SERVICE_NAME, LOOKBACK, True)
+                print(latency)
 
-            if not use_latency:
+                time_diff = curr_ts - start_ts
+                SCALE_TIMES.append(time_diff)
                 scale_up()
-                #workers.apply_async(scale_up)
-            elif latency > sensitivity and use_latency:
-                scale_up()
-                #workers.apply_async(scale_up)
+                workers.apply_async(scale_up)
 
-            times.append(curr_ts - start_ts)
-            latencies.append(latency)
+#            times.append(curr_ts - start_ts)
+            latencies.append([time_diff, latency])
             print(str(curr_ts - start_ts) + " s: " + str(latency) + " ms")
             time.sleep(1)
 
         #workers.join()
 
-    times = np.array(times)
+    #times = np.array(times)
     latencies = np.array(latencies)
-    # latencies[latencies < 0] = 0
-    np.savetxt('times', times)
+    sort_indices = latencies[:, 0].argsort()
+    latencies = latencies[sort_indices]
+    #np.savetxt('times', times)
     np.savetxt('latencies', latencies)
 #    plt.plot(times, latencies)
  #   plt.show()
