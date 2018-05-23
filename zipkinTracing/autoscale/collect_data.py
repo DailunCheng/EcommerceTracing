@@ -17,7 +17,7 @@ from query_latency import queryLatency
 LOOKBACK = 3500
 SERVICE_NAME = "orders"
 HOST_IP = "128.253.128.66"
-TIME_LIMIT = 8 * 60 # 5 minutes
+TIME_LIMIT = 6 * 60 # 5 minutes
 MEMORY_SWAP_ERROR = "Memory limit should be smaller than already set memoryswap limit, update the memoryswap at the same time"
 SCALE_TIMES = []
 
@@ -67,17 +67,18 @@ def run_scaling(sensitivity, use_utilization=True, use_latency=True):
             while curr_ts - start_ts < TIME_LIMIT:
                 curr_ts = int(time.time())
                 latency = queryLatency(HOST_IP, SERVICE_NAME, LOOKBACK, True)
-                print(latency)
 
                 time_diff = curr_ts - start_ts
-                SCALE_TIMES.append(time_diff)
-                scale_up()
-                workers.apply_async(scale_up)
+                print(str(time_diff) + " s: " + str(latency) + " ms")
+                latencies.append([time_diff, latency])
+
+                if latency > sensitivity:
+                    SCALE_TIMES.append(time_diff)
+                    #scale_up()
+                    workers.apply_async(scale_up)
 
 #            times.append(curr_ts - start_ts)
-            latencies.append([time_diff, latency])
-            print(str(curr_ts - start_ts) + " s: " + str(latency) + " ms")
-            time.sleep(1)
+                time.sleep(1)
 
         #workers.join()
 
