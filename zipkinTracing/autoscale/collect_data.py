@@ -18,8 +18,9 @@ LOOKBACK = 3500
 SERVICE_NAME = "orders"
 HOST_IP = "128.253.128.66"
 TIME_LIMIT = 6 * 60 # 5 minutes
-MEMORY_SWAP_ERROR = "Memory limit should be smaller than already set memoryswap limit, update the memoryswap at the same time"
 SCALE_TIMES = []
+SCALE_VALUES = []
+BOTTLENECK_CONTAINER_ID = "2c3dddd75a07171547d225bf0c6adc5c83f43053e02fb2559a197787e9efd42b"
 
 def scale_up():
     containers = Containers()
@@ -34,14 +35,17 @@ def scale_up():
         mem_u = sta.memory_stats_usage()
         mem_l = sta.memory_stats_limit()
         mem_usage = int(mem_u) / int(mem_l)
-        print("MEM USAGE", mem_usage)
+        #print("MEM USAGE", mem_usage)
 
-        if mem_usage >= 0.8:
+        if container_id == BOTTLENECK_CONTAINER_ID:
+            SCALE_VALUES.append(mem_usage)
+
+        if mem_usage >= 0.10:
             print("SCALING UP", container_id)
             new_limit = int(mem_l) * 1.66
             update_process = subprocess.Popen(['docker', 'update', '--memory', str(new_limit), container_id], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             update_process.wait()
-            print("SCALED", update_process.returncode, update_process.stderr.read(), update_process.stdout.read())
+            #print("SCALED", update_process.returncode, update_process.stderr.read(), update_process.stdout.read())
 
             if update_process.returncode != 0:
                 print("FAILED TO SCALE", container_id)
@@ -74,22 +78,18 @@ def run_scaling(sensitivity, use_utilization=True, use_latency=True):
 
                 if latency > sensitivity:
                     SCALE_TIMES.append(time_diff)
-                    #scale_up()
                     workers.apply_async(scale_up)
 
-#            times.append(curr_ts - start_ts)
                 time.sleep(1)
 
-        #workers.join()
-
-    #times = np.array(times)
+    scale_times = np.array(SCALE_TIMES)
+    scale_values = np.array(SCALE_VALUES)
     latencies = np.array(latencies)
     sort_indices = latencies[:, 0].argsort()
     latencies = latencies[sort_indices]
-    #np.savetxt('times', times)
     np.savetxt('latencies', latencies)
-#    plt.plot(times, latencies)
- #   plt.show()
+    np.savetxt('scale_times', scale_times)
+    np.savetxt('scale_values', scale_values)
 
 if __name__ == "__main__":
     run_scaling(500)
