@@ -19,14 +19,12 @@ SERVICE_NAME = "orders"
 HOST_IP = "128.253.128.66"
 TIME_LIMIT = 6 * 60 # 5 minutes
 SCALE_TIMES = []
-SCALE_VALUES = []
-BOTTLENECK_CONTAINER_ID = "2c3dddd75a07171547d225bf0c6adc5c83f43053e02fb2559a197787e9efd42b"
 
 def scale_up():
     containers = Containers()
     ids = Ids()
 
-    print("SCALING UP")
+    #print("SCALING UP")
     for container_id in ids.ids():
         ins = Inspect(container_id)
         sta = Stats(container_id)
@@ -36,9 +34,6 @@ def scale_up():
         mem_l = sta.memory_stats_limit()
         mem_usage = int(mem_u) / int(mem_l)
         #print("MEM USAGE", mem_usage)
-
-        if container_id == BOTTLENECK_CONTAINER_ID:
-            SCALE_VALUES.append(mem_usage)
 
         if mem_usage >= 0.10:
             print("SCALING UP", container_id)
@@ -55,9 +50,7 @@ def scale_up():
             else:
                 print("SCALED UP", container_id)
 
-def run_scaling(sensitivity, use_utilization=True, use_latency=True):
-    assert (use_utilization or use_latency)
-
+def run_scaling(sensitivity, use_latency=True):
     times = []
     latencies = []
 
@@ -66,29 +59,27 @@ def run_scaling(sensitivity, use_utilization=True, use_latency=True):
     start_ts = int(time.time())
     curr_ts = start_ts
 
-    while curr_ts - start_ts < TIME_LIMIT:
-        curr_ts = int(time.time())
-        latency = queryLatency(HOST_IP, SERVICE_NAME, LOOKBACK, True)
-        time_diff = curr_ts - start_ts
-        print(str(time_diff) + " s: " + str(latency) + " ms")
-        latencies.append([time_diff, latency])
+    with Pool() as workers:
+        while curr_ts - start_ts < TIME_LIMIT:
+            curr_ts = int(time.time())
+            latency = queryLatency(HOST_IP, SERVICE_NAME, LOOKBACK, True)
+            time_diff = curr_ts - start_ts
+            print(str(time_diff) + " s: " + str(latency) + " ms")
+            latencies.append([time_diff, latency])
 
-        if use_latency:
-            with Pool() as workers:
-                if latency > sensitivity:
-                    SCALE_TIMES.append(time_diff)
-                    workers.apply_async(scale_up)
+            if (use_latency and latency > sensitivity) or not use_latency:
+                SCALE_TIMES.append(time_diff)
+                workers.apply_async(scale_up)
 
-                time.sleep(1)
+            time.sleep(1)
+
 
     scale_times = np.array(SCALE_TIMES)
-    scale_values = np.array(SCALE_VALUES)
     latencies = np.array(latencies)
     sort_indices = latencies[:, 0].argsort()
     latencies = latencies[sort_indices]
     np.savetxt('latencies', latencies)
     np.savetxt('scale_times', scale_times)
-    np.savetxt('scale_values', scale_values)
 
 if __name__ == "__main__":
-    run_scaling(500)
+    run_scaling(500, False)
