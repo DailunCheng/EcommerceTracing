@@ -66,16 +66,15 @@ def run_scaling(sensitivity, use_utilization=True, use_latency=True):
     start_ts = int(time.time())
     curr_ts = start_ts
 
-    with Pool() as workers:
+    while curr_ts - start_ts < TIME_LIMIT:
+        curr_ts = int(time.time())
+        latency = queryLatency(HOST_IP, SERVICE_NAME, LOOKBACK, True)
+        time_diff = curr_ts - start_ts
+        print(str(time_diff) + " s: " + str(latency) + " ms")
+        latencies.append([time_diff, latency])
+
         if use_latency:
-            while curr_ts - start_ts < TIME_LIMIT:
-                curr_ts = int(time.time())
-                latency = queryLatency(HOST_IP, SERVICE_NAME, LOOKBACK, True)
-
-                time_diff = curr_ts - start_ts
-                print(str(time_diff) + " s: " + str(latency) + " ms")
-                latencies.append([time_diff, latency])
-
+            with Pool() as workers:
                 if latency > sensitivity:
                     SCALE_TIMES.append(time_diff)
                     workers.apply_async(scale_up)
