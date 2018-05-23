@@ -27,8 +27,11 @@ def getFrontendServiceLatency(frontend_service_name, jsonResult):
 def getTracingFromZipkin(hostIP, container_name, durationMilliSecond):
     URL = "http://" + hostIP + ":9411/api/v2/traces?serviceName=" + container_name + "&lookback=" + str(
         durationMilliSecond) + "&limit=1000"
-    jsonResult = requests.get(URL).json()
-    # print(json.dumps(jsonResult))
+    r = requests.get(URL)
+    #print(r.status_code)
+    jsonResult = r.json()
+    #jsonResult = requests.get(URL).json()
+    #print(json.dumps(jsonResult))
     return jsonResult
 
 

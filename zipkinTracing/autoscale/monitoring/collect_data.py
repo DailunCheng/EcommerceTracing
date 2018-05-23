@@ -15,9 +15,9 @@ from domonit.stats import Stats
 from query_latency import queryLatency
 
 LOOKBACK = 3500
-SERVICE_NAME = "frontend"
+SERVICE_NAME = "orders"
 HOST_IP = "128.253.128.66"
-TIME_LIMIT = 5 * 60 # 5 minutes
+TIME_LIMIT = 8 * 60 # 5 minutes
 MEMORY_SWAP_ERROR = "Memory limit should be smaller than already set memoryswap limit, update the memoryswap at the same time"
 
 def scale_up():
@@ -37,17 +37,18 @@ def scale_up():
 
         if mem_usage >= 0.8:
             print("SCALING UP", container_id)
-            new_limit = mem_usage * 1.66
+            new_limit = int(mem_l) * 1.66
             update_process = subprocess.Popen(['docker', 'update', '--memory', str(new_limit), container_id], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print("SCALED")
             update_process.wait()
+            print("SCALED", update_process.returncode, update_process.stderr.read(), update_process.stdout.read())
 
             if update_process.returncode != 0:
-                if MEMORY_SWAP_ERROR.encode() in update_process.stderr:
-                    update_process = subprocess.Popen(['docker', 'update', '--memory-swap', str(new_limit), '--memory', str(new_limit), container_id], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    update_process.wait()
-            else:
                 print("FAILED TO SCALE", container_id)
+                update_process = subprocess.Popen(['docker', 'update', '--memory-swap', str(new_limit), '--memory', str(new_limit), container_id], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                update_process.wait()
+                print("SCALED2", update_process.returncode, update_process.stderr.read(), update_process.stdout.read())
+            else:
+                print("SCALED UP", container_id)
 
 def run_scaling(sensitivity, use_utilization=True, use_latency=True):
     assert (use_utilization or use_latency)
@@ -65,6 +66,7 @@ def run_scaling(sensitivity, use_utilization=True, use_latency=True):
             curr_ts = int(time.time())
             #latency = getLatency(LOOKBACK, SERVICE_NAME, HOST_IP)
             latency = queryLatency(HOST_IP, SERVICE_NAME, LOOKBACK, True)
+            print(latency)
 
             if not use_latency:
                 scale_up()
