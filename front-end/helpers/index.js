@@ -75,11 +75,32 @@
    *   });
    * });
    */
+    const CLSContext = require('zipkin-context-cls');
+    const {Tracer} = require('zipkin');
+    const {recorder} = require('../traceRecorder');
+    const rest = require('rest');
+    const {restInterceptor} = require('zipkin-instrumentation-cujojs-rest');
+    const defaultRequest = require('rest/interceptor/defaultRequest');
+    const ctxImpl = new CLSContext();
+    const tracer = new Tracer({ctxImpl, recorder});
   helpers.simpleHttpRequest = function(url, res, next) {
+    const zipkinRest = rest.wrap(restInterceptor, {tracer,serviceName: 'frontend_helpers_get'});
+    zipkinRest({path:url,method:'GET'})
+    .then(
+        function(response) {
+             var body = "";
+                if(response.entity!=null&&response.entity!=""){body = JSON.parse(response.entity);}
+                if (typeof body.error !== "undefined" ) {
+                    return next(body.error);
+                }
+             helpers.respondSuccessBody(res, JSON.stringify(body));
+       }.bind({res: res}))
+    .catch(err => console.error('Error', err.stack));
+    /*
     request.get(url, function(error, response, body) {
       if (error) return next(error);
       helpers.respondSuccessBody(res, body);
-    }.bind({res: res}));
+    }.bind({res: res}));*/
   }
 
   /* TODO: Add documentation */

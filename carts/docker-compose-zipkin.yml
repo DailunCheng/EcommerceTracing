@@ -18,6 +18,20 @@ services:
       - ZIPKIN_ENABLED=true
     ports:
       - "8081:80"
+  carts-db:
+    image: mongo
+    hostname: carts-db
+    restart: always
+    cap_drop:
+      - all
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid
+
   zipkin:
     image: openzipkin/zipkin 
     hostname: zipkin
